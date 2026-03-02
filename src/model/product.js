@@ -10,7 +10,14 @@ const productSchma = new mongoose.Schema(
       ref: "caterories",
       required: true,
     },
-
+    brand: {
+      type: String,
+      required: false,
+    },
+    origin: {
+      type: String,
+      required: false,
+    },
     price: {
       type: Number,
       required: true,
