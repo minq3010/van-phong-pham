@@ -43,6 +43,10 @@ const userSchma = new mongoose.Schema(
     resetPasswordExpire: {
       type: Date,
     },
+    mustChangePassword: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     versionKey: false,
@@ -50,4 +54,4 @@ const userSchma = new mongoose.Schema(
   }
 );
 
-export const User = mongoose.model("Users", userSchma);
+export const User = mongoose.models.Users || mongoose.model("Users", userSchma);

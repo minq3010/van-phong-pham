@@ -3,14 +3,15 @@
   "version": "1.0.0",
   "description": "",
   "main": "./src/app.js",
+  "type": "module",
   "scripts": {
-    "dev": "vite"
+    "dev": "vite",
+    "seed:manager": "node src/seed/createManager.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "bcrypt": "^5.1.1",
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",

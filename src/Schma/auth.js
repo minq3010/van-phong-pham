@@ -41,11 +41,7 @@ export const addUserSchma = Joi.object({
     "string.email": "Địa chỉ email không hợp lệ",
     "any.required": "Email không được để trống",
   }),
-  password: Joi.string().required().min(8).messages({
-    "any.required": "Mật khẩu không được để trống",
-    "string.min": "Mật khẩu phải có ít nhất 8 ký tự",
-  }),
-  role: Joi.string().valid("admin").default("admin"),
+  role: Joi.string().valid("admin", "manage", "user").default("admin"),
 });
 
 export const loginSchema = Joi.object({
