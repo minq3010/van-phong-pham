@@ -9,4 +9,4 @@ const DanhMucSchema = new mongoose.Schema(
   },
 
 );
-export const Caterory = mongoose.model("caterories", DanhMucSchema);
+export const Caterory = mongoose.models.caterories || mongoose.model("caterories", DanhMucSchema);

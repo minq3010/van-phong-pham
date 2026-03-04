@@ -6,11 +6,12 @@ import {
   GetAllCategory,
   UpdateCategory,
 } from "../controller/Caterory";
+import { checkout, checkManage } from "../xacthuc/checkout";
 
 const router = express.Router();
 router.get("/categorys", GetAllCategory);
-router.post("/category", CreateCategory);
-router.patch("/category/:id", UpdateCategory);
-router.delete("/category/:id", DeleteCategory);
+router.post("/category", checkout, CreateCategory);
+router.patch("/category/:id", checkout, UpdateCategory);
+router.delete("/category/:id", checkManage, DeleteCategory);
 router.get("/category/:id", DetailCategory);
 export default router;
