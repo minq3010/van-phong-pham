@@ -9,34 +9,28 @@ import {
   getCommentsByProductId,
   updateComment,
 } from "../controller/comment.js";
+import { checkout, checkManage } from "../xacthuc/checkout";
 
 const router = express.Router();
 
 // (C) Create - Tạo comment
-// POST /api/comments
 router.post("/comment", createComment);
 
 // (R) Read - Lấy danh sách comment
-// GET /api/comments
-// Hỗ trợ query: ?productId=&userId=&status=&rating=
 router.get("/comment", getComments);
 
 // (R) Read - Lấy 1 comment theo id
-// GET /api/comments/:id
 router.get("/comment/:id", getCommentsByProductId);
 
 // (U) Update - Cập nhật comment
-// PUT /api/comments/:id
-router.put("/comment/:id", updateComment);
+router.put("/comment/:id", checkout, updateComment);
 
 // (D) Delete - Xoá comment
-// DELETE /api/comments/:id
-router.delete("/comment/:id", deleteComment);
+router.delete("/comment/:id", checkManage, deleteComment);
 
-// (R) Read - Lấy comment theo productId (thường dùng cho trang chi tiết sản phẩm)
-// GET /api/comments/product/:productId
+// (R) Read - Lấy comment theo productId
 router.get("/comment/product/:productId", getCommentsByProduct);
 
-router.get("/comment/admin/products", getCommentStatsForAdmin);
+router.get("/comment/admin/products", checkout, getCommentStatsForAdmin);
 
 export default router;
