@@ -6,11 +6,12 @@ import {
   getAllVoucher,
   UpdateVoucher,
 } from "../controller/voucher";
+import { checkout, checkManage } from "../xacthuc/checkout";
 
 const router = express.Router();
-router.get("/vouchers", getAllVoucher);
-router.post("/voucher", CreateVoucher);
-router.patch("/voucher/:id", UpdateVoucher);
-router.delete("/voucher/:id", DeleteVoucher);
-router.get("/voucher/:id", DetailVoucher);
+router.get("/vouchers", checkout, getAllVoucher);
+router.post("/voucher", checkout, CreateVoucher);
+router.patch("/voucher/:id", checkout, UpdateVoucher);
+router.delete("/voucher/:id", checkManage, DeleteVoucher);
+router.get("/voucher/:id", checkout, DetailVoucher);
 export default router;

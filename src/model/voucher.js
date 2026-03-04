@@ -35,4 +35,4 @@ const voucherSchma = new mongoose.Schema({
     required: true,
   },
 });
-export const Voucher = mongoose.model("vouchers", voucherSchma);
+export const Voucher = mongoose.models.vouchers || mongoose.model("vouchers", voucherSchma);
