@@ -97,6 +97,7 @@ const AddProduct = async (req, res) => {
       ...req.body,
       quantity: totalQuantity,
       price: productPrice,
+      createdBy: req.user.id, // Thêm ID của user tạo sản phẩm
     });
 
     return res.status(201).json({
@@ -134,6 +135,7 @@ const UpdateProduct = async (req, res) => {
         ...req.body,
         quantity: totalQuantity,
         price: productPrice,
+        updatedBy: req.user.id, // Thêm ID của user cập nhật sản phẩm
       },
       {
         new: true,

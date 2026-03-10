@@ -6,7 +6,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "seed:manager": "node src/seed/createManager.js"
+    "seed:manager": "node src/seed/createManager.js",
+    "seed:admin": "node src/seed/seed-admin.js",
+    "seed:data": "node src/seed/seedData.js"
   },
   "keywords": [],
   "author": "",

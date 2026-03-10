@@ -24,6 +24,24 @@ const orderSchema = new mongoose.Schema(
       required: true,
     },
 
+    email: {
+      type: String,
+      required: false,
+      default: "",
+    },
+
+    customerType: {
+      type: String,
+      enum: ["retail", "wholesale"],
+      default: "retail",
+    },
+
+    orderSource: {
+      type: String,
+      enum: ["customer_self_service", "manual_entry"],
+      default: "customer_self_service",
+    },
+
     products: [
       {
         productId: { type: mongoose.Schema.Types.ObjectId, ref: "products" },
@@ -55,7 +73,8 @@ const orderSchema = new mongoose.Schema(
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Users",
-      required: true,
+      required: false,
+      default: null,
     },
 
     voucherId: {
@@ -82,6 +101,34 @@ const orderSchema = new mongoose.Schema(
       ref: "Users",
       default: null,
       required: false,
+    },
+
+    invoiceRequested: {
+      type: Boolean,
+      default: false,
+    },
+
+    invoiceInfo: {
+      companyName: {
+        type: String,
+        default: "",
+      },
+      taxCode: {
+        type: String,
+        default: "",
+      },
+      invoiceEmail: {
+        type: String,
+        default: "",
+      },
+      invoiceAddress: {
+        type: String,
+        default: "",
+      },
+      note: {
+        type: String,
+        default: "",
+      },
     },
   },
   {
