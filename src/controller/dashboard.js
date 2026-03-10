@@ -59,7 +59,15 @@ const DashboardStats = async (req, res) => {
       );
     }
 
-    const matchAll = { orderDate: { $gte: from, $lte: to } };
+    const dashboardDateField = {
+      $ifNull: ["$orderDate", "$createdAt"],
+    };
+
+    const dashboardDateRangeMatch = {
+      dashboardDate: { $gte: from, $lte: to },
+    };
+
+    const matchAll = dashboardDateRangeMatch;
     // paid statuses: hỗ trợ cả tiếng VN lẫn "Success"
     const paidStatuses = [STAT_SUCCESS_VN, STAT_SUCCESS_EN];
     const matchPaid = { ...matchAll, status: { $in: paidStatuses } };
@@ -67,6 +75,11 @@ const DashboardStats = async (req, res) => {
     // --- Promises ---
     // totals for all orders (count, unique customers, totalRevenueAll)
     const totalsAllPromise = Order.aggregate([
+      {
+        $addFields: {
+          dashboardDate: dashboardDateField,
+        },
+      },
       { $match: matchAll },
       {
         $group: {
@@ -96,6 +109,11 @@ const DashboardStats = async (req, res) => {
 
     // totals for paid orders (earnings, paid orders, paid customers)
     const totalsPaidPromise = Order.aggregate([
+      {
+        $addFields: {
+          dashboardDate: dashboardDateField,
+        },
+      },
       { $match: matchPaid },
       {
         $group: {
@@ -128,11 +146,20 @@ const DashboardStats = async (req, res) => {
     // 1) orderNumber theo thời gian, phân tách theo từng trạng thái (pivot)
     // Kết quả: [{ date: "2025-12-01", counts: { "Xác nhận": n, "Đang giao hàng": n, "Thành Công": n, "Hủy": n, total: n } }, ...]
     const orderNumberPromise = Order.aggregate([
+      {
+        $addFields: {
+          dashboardDate: dashboardDateField,
+        },
+      },
       { $match: matchAll },
       {
         $project: {
           dateStr: {
-            $dateToString: { format: dateFormat, date: "$orderDate", timezone },
+            $dateToString: {
+              format: dateFormat,
+              date: "$dashboardDate",
+              timezone,
+            },
           },
           status: 1,
         },
@@ -177,11 +204,20 @@ const DashboardStats = async (req, res) => {
 
     // 2) revenue chart (paid only) - như trước
     const revenueChartPromise = Order.aggregate([
+      {
+        $addFields: {
+          dashboardDate: dashboardDateField,
+        },
+      },
       { $match: matchPaid },
       {
         $group: {
           _id: {
-            $dateToString: { format: dateFormat, date: "$orderDate", timezone },
+            $dateToString: {
+              format: dateFormat,
+              date: "$dashboardDate",
+              timezone,
+            },
           },
           revenue: { $sum: { $ifNull: ["$totalPrice", 0] } },
         },
@@ -192,8 +228,14 @@ const DashboardStats = async (req, res) => {
 
     // 3) top products (paid)
     const topProductsPromise = Order.aggregate([
+      {
+        $addFields: {
+          dashboardDate: dashboardDateField,
+        },
+      },
       { $match: matchPaid },
       { $unwind: "$products" },
+      { $sort: { dashboardDate: -1 } },
       {
         $group: {
           _id: {
@@ -201,6 +243,21 @@ const DashboardStats = async (req, res) => {
             color: "$products.color",
           },
           qty: { $sum: "$products.quantity" },
+          totalAmount: {
+            $sum: {
+              $multiply: [
+                { $ifNull: ["$products.priceAfterDis", "$products.priceBeforeDis"] },
+                { $ifNull: ["$products.quantity", 0] },
+              ],
+            },
+          },
+          price: {
+            $first: {
+              $ifNull: ["$products.priceAfterDis", "$products.priceBeforeDis"],
+            },
+          },
+          orderProductName: { $first: "$products.name" },
+          lastOrderDate: { $first: "$dashboardDate" },
         },
       },
       { $sort: { qty: -1 } },
@@ -217,24 +274,99 @@ const DashboardStats = async (req, res) => {
       {
         $project: {
           _id: 0,
-          productId: "$_id.productId",
-          name: { $ifNull: ["$product.name", "Unknown product"] },
-          image: "$product.imageUrl", // ✅ ảnh theo productId
-          price: "$product.price",
+          productId: "$product._id",
+          name: {
+            $ifNull: [
+              "$orderProductName",
+              { $ifNull: ["$product.name", "Unknown product"] },
+            ],
+          },
+          image: {
+            $ifNull: [
+              "$product.imageUrl",
+              { $arrayElemAt: ["$product.abumImage", 0] },
+            ],
+          },
+          price: { $ifNull: ["$price", "$product.price"] },
           color: "$_id.color",
           qty: 1,
+          totalAmount: 1,
+          lastOrderDate: 1,
+          isProductAvailable: { $cond: [{ $ifNull: ["$product._id", false] }, true, false] },
         },
       },
     ]);
 
     // 4) recent orders
-    const recentOrdersPromise = Order.find(matchAll)
-      .sort({ orderDate: -1 })
-      .limit(recentLimit)
-      .select(
-        "madh customerName phone totalPrice status payment orderDate products userId"
-      )
-      .populate("products.productId", "name image price color");
+    const recentOrdersPromise = Order.aggregate([
+      {
+        $addFields: {
+          dashboardDate: dashboardDateField,
+        },
+      },
+      { $match: matchAll },
+      { $sort: { dashboardDate: -1 } },
+      { $limit: recentLimit },
+      {
+        $lookup: {
+          from: "products",
+          localField: "products.productId",
+          foreignField: "_id",
+          as: "productDocs",
+        },
+      },
+      {
+        $addFields: {
+          products: {
+            $map: {
+              input: "$products",
+              as: "orderProduct",
+              in: {
+                $mergeObjects: [
+                  "$$orderProduct",
+                  {
+                    productId: {
+                      $let: {
+                        vars: {
+                          matchedProduct: {
+                            $arrayElemAt: [
+                              {
+                                $filter: {
+                                  input: "$productDocs",
+                                  as: "productDoc",
+                                  cond: {
+                                    $eq: [
+                                      "$$productDoc._id",
+                                      "$$orderProduct.productId",
+                                    ],
+                                  },
+                                },
+                              },
+                              0,
+                            ],
+                          },
+                        },
+                        in: {
+                          name: "$$matchedProduct.name",
+                          imageUrl: "$$matchedProduct.imageUrl",
+                          price: "$$matchedProduct.price",
+                        },
+                      },
+                    },
+                  },
+                ],
+              },
+            },
+          },
+        },
+      },
+      {
+        $project: {
+          productDocs: 0,
+          dashboardDate: 0,
+        },
+      },
+    ]);
 
     // await all promises
     const [

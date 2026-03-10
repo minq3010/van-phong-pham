@@ -7,7 +7,6 @@
   "scripts": {
     "dev": "vite",
     "seed:manager": "node src/seed/createManager.js",
-    "seed:admin": "node src/seed/seed-admin.js",
     "seed:data": "node src/seed/seedData.js"
   },
   "keywords": [],
@@ -21,6 +20,7 @@
     "joi": "^17.13.3",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.5.0",
+    "multer": "^2.1.1",
     "nodemailer": "^7.0.11",
     "zod": "^3.23.8"
   },

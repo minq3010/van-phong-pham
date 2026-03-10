@@ -41,12 +41,13 @@ const productSchma = new mongoose.Schema(
     },
     imageUrl: {
       type: String,
-      required: true,
+      required: false,
+      default: "",
     },
     abumImage: {
       type: [String],
       default: [],
-      required: true,
+      required: false,
     },
     discount: {
       type: Number,

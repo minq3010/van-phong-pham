@@ -1,6 +1,74 @@
 import { Order } from "../model/order";
 import { Product } from "../model/product";
 
+const parseJsonField = (value, fallback) => {
+  if (value === undefined || value === null || value === "") {
+    return fallback;
+  }
+
+  if (Array.isArray(value) || typeof value === "object") {
+    return value;
+  }
+
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+};
+
+const parseBooleanField = (value, fallback = true) => {
+  if (value === undefined || value === null || value === "") {
+    return fallback;
+  }
+
+  if (typeof value === "boolean") {
+    return value;
+  }
+
+  return String(value).toLowerCase() === "true";
+};
+
+const buildUploadedImageUrls = (req) =>
+  (req.files || []).map(
+    (file) => `${req.protocol}://${req.get("host")}/uploads/products/${file.filename}`
+  );
+
+const buildProductPayload = ({ req, existingImages = [] }) => {
+  const variants = parseJsonField(req.body.variants, []).map((item) => ({
+    color: item?.color,
+    price: Number(item?.price || 0),
+    quantity: Number(item?.quantity || 0),
+    status: item?.status !== undefined ? parseBooleanField(item.status, true) : true,
+  }));
+
+  const uploadedImages = buildUploadedImageUrls(req);
+  const abumImage = [...existingImages, ...uploadedImages].filter(Boolean);
+
+  const totalQuantity = variants.length
+    ? variants.reduce((sum, item) => sum + Number(item.quantity || 0), 0)
+    : Number(req.body.quantity || 0);
+
+  const productPrice = variants.length
+    ? Number(variants[0]?.price || 0)
+    : Number(req.body.price || 0);
+
+  return {
+    name: req.body.name,
+    caterori: req.body.caterori,
+    brand: req.body.brand || "",
+    origin: req.body.origin || "",
+    price: productPrice,
+    variants,
+    imageUrl: abumImage[0] || "",
+    abumImage,
+    discount: Number(req.body.discount || 0),
+    description: req.body.description,
+    status: parseBooleanField(req.body.status, true),
+    quantity: totalQuantity,
+  };
+};
+
 const GetAllProduct = async (req, res) => {
   try {
     // đếm tổng số sản phẩm
@@ -77,26 +145,8 @@ const GetProductsCategory = async (req, res) => {
 };
 const AddProduct = async (req, res) => {
   try {
-    const { variants, quantity, price } = req.body;
-
-    let totalQuantity = Number(quantity) || 0;
-    let productPrice = Number(price) || 0;
-
-    // Nếu có biến thể
-    if (variants && variants.length > 0) {
-      // Tổng số lượng
-      totalQuantity = variants.reduce((sum, item) => {
-        return sum + Number(item.quantity || 0);
-      }, 0);
-
-      // Giá lấy từ biến thể đầu tiên
-      productPrice = Number(variants[0].price) || 0;
-    }
-
     const data = await Product.create({
-      ...req.body,
-      quantity: totalQuantity,
-      price: productPrice,
+      ...buildProductPayload({ req }),
       createdBy: req.user.id, // Thêm ID của user tạo sản phẩm
     });
 
@@ -113,28 +163,23 @@ const AddProduct = async (req, res) => {
 
 const UpdateProduct = async (req, res) => {
   try {
-    const { variants, quantity, price } = req.body;
+    const currentProduct = await Product.findById(req.params.id);
 
-    let totalQuantity = Number(quantity) || 0;
-    let productPrice = Number(price) || 0;
-
-    // Nếu có biến thể
-    if (variants && variants.length > 0) {
-      // Tổng số lượng từ variants
-      totalQuantity = variants.reduce((sum, item) => {
-        return sum + Number(item.quantity || 0);
-      }, 0);
-
-      // Giá lấy từ biến thể đầu tiên
-      productPrice = Number(variants[0].price) || 0;
+    if (!currentProduct) {
+      return res.status(404).json({
+        message: "Product not found",
+      });
     }
+
+    const existingImages = parseJsonField(
+      req.body.existingImages,
+      currentProduct.abumImage || []
+    );
 
     const data = await Product.findByIdAndUpdate(
       req.params.id,
       {
-        ...req.body,
-        quantity: totalQuantity,
-        price: productPrice,
+        ...buildProductPayload({ req, existingImages }),
         updatedBy: req.user.id, // Thêm ID của user cập nhật sản phẩm
       },
       {
@@ -142,12 +187,6 @@ const UpdateProduct = async (req, res) => {
         runValidators: true,
       }
     );
-
-    if (!data) {
-      return res.status(404).json({
-        message: "Product not found",
-      });
-    }
 
     return res.status(200).json({
       message: "Update success",

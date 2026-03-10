@@ -10,7 +10,15 @@ import dashboardRouter from "./router/dashboard";
 import comment from "./router/comment";
 import order from "./router/order";
 import cookieParser from "cookie-parser";
+import path from "path";
+import { fileURLToPath } from "url";
+import { ensureUploadDirs, uploadsRootDir } from "./utils/ensureUploadDirs.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
+ensureUploadDirs();
 app.use(cors({
     origin: 'http://localhost:5173', // domain frontend của bạn
     credentials: true, // cho phép gửi cookie, credentials
@@ -18,6 +26,7 @@ app.use(cors({
   app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+  app.use("/uploads", express.static(uploadsRootDir));
 connectDb();
 app.use("/api", productRouter);
 app.use("/api", dashboardRouter);
