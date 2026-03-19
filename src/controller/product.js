@@ -38,6 +38,7 @@ const buildProductPayload = ({ req, existingImages = [] }) => {
   const variants = parseJsonField(req.body.variants, []).map((item) => ({
     color: item?.color,
     price: Number(item?.price || 0),
+    priceWholesale: Number(item?.priceWholesale || 0),
     quantity: Number(item?.quantity || 0),
     status: item?.status !== undefined ? parseBooleanField(item.status, true) : true,
   }));
@@ -52,6 +53,9 @@ const buildProductPayload = ({ req, existingImages = [] }) => {
   const productPrice = variants.length
     ? Number(variants[0]?.price || 0)
     : Number(req.body.price || 0);
+  const productPriceWholesale = variants.length
+    ? Number(variants[0]?.priceWholesale || 0)
+    : Number(req.body.priceWholesale || 0);
 
   return {
     name: req.body.name,
@@ -59,6 +63,7 @@ const buildProductPayload = ({ req, existingImages = [] }) => {
     brand: req.body.brand || "",
     origin: req.body.origin || "",
     price: productPrice,
+    priceWholesale: productPriceWholesale,
     variants,
     imageUrl: abumImage[0] || "",
     abumImage,

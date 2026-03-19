@@ -102,7 +102,15 @@ const buildOrderDocument = async (orderInput, session, nextOrderCode, actor) => 
       throw new Error(`Sản phẩm ${product.name} - màu ${item.color} không đủ số lượng`);
     }
 
-    const priceBeforeDis = Number(variant.price || product.price || 0);
+    const isWholesaleCustomer = normalizedInput.customerType === "wholesale";
+    const wholesalePrice = Number(
+      variant?.priceWholesale ?? product?.priceWholesale ?? 0
+    );
+    const retailPrice = Number(variant?.price ?? product?.price ?? 0);
+    const priceBeforeDis =
+      isWholesaleCustomer && wholesalePrice > 0
+        ? wholesalePrice
+        : retailPrice;
     const productDiscount = Math.max(0, Number(product.discount || 0));
     const priceAfterDis = Math.max(
       0,

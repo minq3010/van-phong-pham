@@ -22,6 +22,11 @@ const productSchma = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    priceWholesale: {
+      type: Number,
+      required: false,
+      default: 0,
+    },
     variants: {
       type: [
         {
@@ -30,6 +35,7 @@ const productSchma = new mongoose.Schema(
             required: true,
           },
           price: { type: Number },
+          priceWholesale: { type: Number, default: 0 },
           quantity: { type: Number, required: true },
           status: {
             type: Boolean,
