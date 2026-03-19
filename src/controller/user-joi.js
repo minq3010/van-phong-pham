@@ -1,4 +1,5 @@
 import { User } from "../model/User";
+import { Order } from "../model/order";
 import hash from "bcryptjs";
 import { reqSchma, loginSchema, addUserSchma } from "../Schma/auth";
 import jwt from "jsonwebtoken";
@@ -259,6 +260,9 @@ export const GetUser = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const search = req.query.search?.trim() || "";
+    const includeOrderCount =
+      req.query.includeOrderCount === "1" ||
+      req.query.includeOrderCount === "true";
 
     const skip = (page - 1) * limit;
 
@@ -282,11 +286,29 @@ export const GetUser = async (req, res) => {
       .limit(limit)
       .sort({ createdAt: -1 }); // Sắp xếp mới nhất trước (tùy chọn)
 
+    let normalizedData = data;
+
+    if (includeOrderCount && data.length > 0) {
+      const userIds = data.map((item) => item._id);
+      const orderCounts = await Order.aggregate([
+        { $match: { userId: { $in: userIds } } },
+        { $group: { _id: "$userId", count: { $sum: 1 } } },
+      ]);
+      const orderCountMap = new Map(
+        orderCounts.map((item) => [String(item._id), item.count])
+      );
+
+      normalizedData = data.map((item) => ({
+        ...item.toObject(),
+        orderCount: orderCountMap.get(String(item._id)) || 0,
+      }));
+    }
+
     const totalPages = Math.ceil(total / limit);
 
     return res.status(200).json({
       success: true,
-      data,
+      data: normalizedData,
       pagination: {
         currentPage: page,
         totalPages,
