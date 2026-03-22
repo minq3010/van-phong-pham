@@ -6,12 +6,12 @@ import {
   GetCart,
   UpdateCart,
 } from "../controller/cart";
-import { checkOwner } from "../xacthuc/checkout";
+import { checkOwner, checkUser } from "../xacthuc/checkout";
 
 const route = express.Router();
 route.post("/cart/:userid", checkOwner, AddCart);
 route.get("/cart/:userid", checkOwner, GetCart);
-route.delete("/cart/:id", checkOwner, DeleteCart);
-route.patch("/cart/:id", checkOwner, UpdateCart);
+route.delete("/cart/:id", checkUser, DeleteCart);
+route.patch("/cart/:id", checkUser, UpdateCart);
 route.delete("/carts/:userid", checkOwner, DeleteAllCart);
 export default route;

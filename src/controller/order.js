@@ -84,13 +84,20 @@ const buildOrderDocument = async (orderInput, session, nextOrderCode, actor) => 
       throw new Error("Không tìm thấy sản phẩm");
     }
 
-    const variant = product.variants.find(
-      (variantItem) =>
-        variantItem.color === item.color && variantItem.status === true
-    );
+    const normalizedColor = String(item.color || "").trim();
+    const activeVariants = Array.isArray(product.variants)
+      ? product.variants.filter((variantItem) => variantItem.status === true)
+      : [];
+
+    const variant =
+      !normalizedColor || normalizedColor === "Mặc định"
+        ? activeVariants[0]
+        : activeVariants.find((variantItem) => variantItem.color === normalizedColor);
 
     if (!variant) {
-      throw new Error(`Không tìm thấy biến thể ${product.name} - ${item.color}`);
+      throw new Error(
+        `Không tìm thấy biến thể ${product.name}${normalizedColor ? ` - ${normalizedColor}` : ""}`
+      );
     }
 
     const quantity = Number(item.quantity || 0);
