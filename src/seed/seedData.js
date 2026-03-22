@@ -1,7 +1,10 @@
+import dotenv from "dotenv";
 import mongoose from "mongoose";
 import { Caterory } from "../model/Caterory.js";
 import { Product } from "../model/product.js";
 import { User } from "../model/User.js";
+
+dotenv.config({ override: true });
 
 // Sample categories
 const categories = [

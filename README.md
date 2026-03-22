@@ -41,6 +41,9 @@ SMTP_USER=your_email@gmail.com
 SMTP_PASS=your_password_or_app_password
 CLIENT_URL=http://localhost:5173
 DB_URI=mongodb://localhost:27017/do_an_freelance?replicaSet=rs0
+GEMINI_API_KEY=your_gemini_api_key
+GEMINI_MODEL=gemini-2.5-flash
+GEMINI_BASE_URL=https://generativelanguage.googleapis.com/v1beta
 ```
 
 Lưu ý:

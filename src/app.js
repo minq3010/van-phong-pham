@@ -1,3 +1,4 @@
+import dotenv from "dotenv";
 import express from "express";
 import cors from "cors"; // Import cors
 import { connectDb } from "./config/db";
@@ -9,10 +10,13 @@ import voucher from "./router/voucher";
 import dashboardRouter from "./router/dashboard";
 import comment from "./router/comment";
 import order from "./router/order";
+import chatbotRouter from "./router/chatbot.js";
 import cookieParser from "cookie-parser";
 import path from "path";
 import { fileURLToPath } from "url";
 import { ensureUploadDirs, uploadsRootDir } from "./utils/ensureUploadDirs.js";
+
+dotenv.config({ override: true });
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -20,7 +24,7 @@ const __dirname = path.dirname(__filename);
 const app = express();
 ensureUploadDirs();
 app.use(cors({
-    origin: 'http://localhost:5173', // domain frontend của bạn
+  origin: process.env.CLIENT_URL || "http://localhost:5173", // domain frontend
     credentials: true, // cho phép gửi cookie, credentials
   }));
   app.use(cookieParser());
@@ -36,5 +40,6 @@ app.use("/api", cartRouter);
 app.use("/api", voucher);
 app.use("/api", order);
 app.use("/api", comment);
+app.use("/api", chatbotRouter);
 export const viteNodeApp = app;
 // export default app;
