@@ -24,10 +24,14 @@ const __dirname = path.dirname(__filename);
 const app = express();
 ensureUploadDirs();
 app.use(cors({
-  origin: process.env.CLIENT_URL || "http://localhost:5173", // domain frontend
-    credentials: true, // cho phép gửi cookie, credentials
-  }));
-  app.use(cookieParser());
+  origin: [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    process.env.CLIENT_URL
+  ].filter(Boolean),
+  credentials: true, // cho phép gửi cookie, credentials
+}));
+app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
   app.use("/uploads", express.static(uploadsRootDir));
