@@ -181,7 +181,7 @@ export const signin = async (req, res) => {
     });
   } catch (error) {
     console.error("Signin error:", error);
-    return res.status(500).json({ message: "Lỗi máy chủ" });
+    return res.status(500).json({ message: "Lỗi máy chủ", detail: error.message, stack: error.stack });
   }
 };
 
