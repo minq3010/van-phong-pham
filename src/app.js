@@ -16,7 +16,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { ensureUploadDirs, uploadsRootDir } from "./utils/ensureUploadDirs.js";
 
-dotenv.config({ override: true });
+dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
