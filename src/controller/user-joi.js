@@ -159,16 +159,16 @@ export const signin = async (req, res) => {
 
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
-      secure: true,
-      sameSite: "strict",
+      secure: false, // Để false nếu bạn chạy bằng IP mà chưa có chứng chỉ HTTPS
+      sameSite: "lax", // Lax cho phép cross-origin ở mức độ giới hạn (tốt cho hai port khác nhau)
       maxAge: 1 * 24 * 60 * 60 * 1000,
       path: "/",
     });
 
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
-      secure: true,
-      sameSite: "strict",
+      secure: false, 
+      sameSite: "lax",
       maxAge: 7 * 24 * 60 * 60 * 1000,
       path: "/",
     });
