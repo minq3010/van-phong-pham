@@ -1,31 +1,24 @@
 version: '3.8'
 services:
   mongodb:
-    image: mongo:latest
-    container_name: mongodb_dev
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongodb_data:/data/db
-      - ./mongo-keyfile:/etc/mongo-keyfile
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: 123456
-      MONGO_INITDB_DATABASE: do_an_freelance
-    command: ["--replSet", "rs0", "--bind_ip_all", "--keyFile", "/etc/mongo-keyfile"]
-    healthcheck:
-      test: >
-        echo "try {
-          rs.status()
-        } catch (e) {
-          rs.initiate({
-            _id: 'rs0',
-            members: [{ _id: 0, host: 'mongodb:27017' }]
-          })
-        }" | mongosh -u root -p 123456 --authenticationDatabase admin --quiet
-      interval: 5s
-      timeout: 30s
-      retries: 30 
+  image: mongo:latest
+  container_name: mongodb_dev
+  restart: always
+  ports:
+    - "27017:27017"
+  volumes:
+    - mongodb_data:/data/db
+    - ./mongo-keyfile:/tmp/mongo-keyfile
+  environment:
+    MONGO_INITDB_ROOT_USERNAME: root
+    MONGO_INITDB_ROOT_PASSWORD: 123456
+  command: >
+    bash -c "
+      cp /tmp/mongo-keyfile /etc/mongo-keyfile &&
+      chmod 400 /etc/mongo-keyfile &&
+      chown mongodb:mongodb /etc/mongo-keyfile &&
+      mongod --replSet rs0 --bind_ip_all --keyFile /etc/mongo-keyfile
+    " 
   mongo-express:
     image: mongo-express:latest
     container_name: mongo_express_dev
