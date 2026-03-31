@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import { User } from "../model/User.js";
 
-dotenv.config({ override: true });
+dotenv.config();
 
 const createManager = async () => {
   try {

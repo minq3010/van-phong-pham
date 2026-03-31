@@ -4,7 +4,7 @@ import { Caterory } from "../model/Caterory.js";
 import { Product } from "../model/product.js";
 import { User } from "../model/User.js";
 
-dotenv.config({ override: true });
+dotenv.config();
 
 // Sample categories
 const categories = [
