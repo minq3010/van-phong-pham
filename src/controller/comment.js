@@ -196,7 +196,10 @@ export const getCommentsByProduct = async (req, res) => {
   try {
     const { productId } = req.params;
 
-    const comments = await Comment.find({ productId, status: "approved" })
+    const comments = await Comment.find({
+      productId,
+      $or: [{ status: "approved" }, { status: { $exists: false } }],
+    })
       .populate("userId", "name")
       .sort({ createdAt: -1 });
 

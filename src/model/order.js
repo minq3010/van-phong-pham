@@ -4,7 +4,8 @@ const orderSchema = new mongoose.Schema(
   {
     madh: {
       type: Number,
-      required: true,
+      required: false,
+      default: () => Number(Date.now().toString().slice(-8)),
     },
     customerName: {
       type: String,
@@ -13,6 +14,12 @@ const orderSchema = new mongoose.Schema(
     totalPrice: {
       type: Number,
       required: false,
+    },
+
+    discountAmount: {
+      type: Number,
+      required: false,
+      default: 0,
     },
     phone: {
       type: String,

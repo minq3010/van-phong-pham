@@ -23,12 +23,24 @@ const commentSchema = new mongoose.Schema(
       trim: true,
     },
 
+    displayName: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
     // Số sao đánh giá (nếu có)
     rating: {
       type: Number,
       min: 1,
       max: 5,
       default: null,
+    },
+
+    status: {
+      type: String,
+      enum: ["pending", "approved", "rejected"],
+      default: "approved",
     },
   },
   {

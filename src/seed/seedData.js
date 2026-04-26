@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import { Caterory } from "../model/Caterory.js";
 import { Product } from "../model/product.js";
 import { User } from "../model/User.js";
+import { getMongoUri } from "../config/db.js";
 
 dotenv.config();
 
@@ -329,9 +330,7 @@ const getProducts = (categoryIds, adminId) => [
 const seedData = async () => {
   try {
     console.log("🔄 Đang kết nối MongoDB...");
-    await mongoose.connect(
-      process.env.DB_URI || "mongodb://localhost:27017/do_an_freelance"
-    );
+    await mongoose.connect(getMongoUri());
     console.log("✅ Kết nối MongoDB thành công\n");
 
     // Xóa dữ liệu cũ
@@ -348,7 +347,8 @@ const seedData = async () => {
     }
     if (!admin) {
       console.error("❌ Không tìm thấy tài khoản admin!");
-      console.log("💡 Chạy: npm run seed:admin để tạo tài khoản admin");
+      console.log("💡 Chạy: npm run seed:manager để tạo tài khoản quản lý");
+      await mongoose.disconnect();
       process.exit(1);
     }
     console.log(`✅ Tìm thấy admin: ${admin.username}\n`);
@@ -388,7 +388,7 @@ const seedData = async () => {
   } catch (error) {
     console.error("❌ Lỗi:", error.message);
     console.error(error);
-    await mongoose.disconnect();
+    await mongoose.disconnect().catch(() => undefined);
     process.exit(1);
   }
 };

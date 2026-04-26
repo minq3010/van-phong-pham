@@ -37,10 +37,14 @@ const calculateVoucherDiscount = (voucher, subtotal) => {
     throw new Error("Voucher không còn hiệu lực");
   }
 
-  const rawDiscount = Math.round((subtotal * Number(voucher.discount || 0)) / 100);
-  const maxDiscount = Number(voucher.maxPriceDis || rawDiscount);
+  const percentDiscount = Math.round(
+    (subtotal * Number(voucher.discount || 0)) / 100
+  );
+  // NOTE: Field name is legacy; UI label is "Số tiền giảm tối thiểu"
+  const minDiscountAmount = Math.max(0, Number(voucher.maxPriceDis || 0));
+  const discountAmount = Math.max(percentDiscount, minDiscountAmount);
 
-  return Math.min(rawDiscount, maxDiscount);
+  return Math.min(discountAmount, subtotal);
 };
 
 const buildOrderDocument = async (orderInput, session, nextOrderCode, actor) => {
@@ -165,6 +169,26 @@ const buildOrderDocument = async (orderInput, session, nextOrderCode, actor) => 
   }
 
   const voucherDiscount = calculateVoucherDiscount(voucher, subtotal);
+
+  if (voucher && voucherDiscount > 0) {
+    const updatedVoucher = await Voucher.findOneAndUpdate(
+      { _id: voucher._id, quantity: { $gt: 0 } },
+      { $inc: { quantity: -1 } },
+      { new: true, session }
+    );
+
+    if (!updatedVoucher) {
+      throw new Error("Voucher đã hết lượt sử dụng");
+    }
+
+    if (updatedVoucher.quantity <= 0 && updatedVoucher.isActive) {
+      await Voucher.updateOne(
+        { _id: updatedVoucher._id },
+        { isActive: false, quantity: 0 },
+        { session }
+      );
+    }
+  }
   const totalPrice = Math.max(0, subtotal - voucherDiscount);
   const invoiceRequested = Boolean(normalizedInput.invoiceRequested);
 
@@ -201,6 +225,7 @@ const buildOrderDocument = async (orderInput, session, nextOrderCode, actor) => 
     orderSource,
     products,
     totalPrice,
+    discountAmount: voucherDiscount,
     status: normalizedInput.status || "Xác nhận",
     payment: normalizedInput.payment || "COD",
     userId: normalizedUserId,
@@ -291,8 +316,6 @@ export const GetOrderByUser = async (req, res) => {
 
 export const AddOrder = async (req, res) => {
   const session = await mongoose.startSession();
-  session.startTransaction();
-
   try {
     const orderInputs = normalizeOrdersPayload(req.body);
 
@@ -317,9 +340,6 @@ export const AddOrder = async (req, res) => {
 
     const createdOrders = await Order.create(preparedOrders, { session });
 
-    await session.commitTransaction();
-    session.endSession();
-
     return res.status(201).json({
       message:
         createdOrders.length > 1
@@ -329,17 +349,15 @@ export const AddOrder = async (req, res) => {
       data: createdOrders,
     });
   } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
     return res.status(400).json({ message: error.message });
+  } finally {
+    session.endSession();
   }
 };
 
 
 export const UpdateOrder = async (req, res) => {
   const session = await mongoose.startSession();
-  session.startTransaction();
-
   try {
     const { id } = req.params;
     const newStatus = req.body.status;
@@ -399,15 +417,11 @@ export const UpdateOrder = async (req, res) => {
       session,
     });
 
-    await session.commitTransaction();
-    session.endSession();
-
     return res.status(200).json(updatedOrder);
   } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
-
     return res.status(400).json({ message: error.message });
+  } finally {
+    session.endSession();
   }
 };
 
@@ -429,6 +443,20 @@ export const DetailOrder = async (req, res) => {
       .populate("products.productId", " imageUrl")
       .populate("handledBy", "username")
       .populate("voucherId", "code discount type");
+
+    if (!data) {
+      return res.status(404).json({ message: "Không tìm thấy đơn hàng" });
+    }
+
+    const isAdminOrManage =
+      req.user?.role === "admin" || req.user?.role === "manage";
+    const isOwner = String(data.userId || "") === String(req.user?.id || "");
+
+    if (!isAdminOrManage && !isOwner) {
+      return res.status(403).json({
+        message: "Bạn không có quyền xem đơn hàng này",
+      });
+    }
 
     return res.status(200).json(data);
   } catch (error) {

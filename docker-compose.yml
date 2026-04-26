@@ -1,24 +1,22 @@
 version: '3.8'
 services:
   mongodb:
-  image: mongo:latest
-  container_name: mongodb_dev
-  restart: always
-  ports:
-    - "27017:27017"
-  volumes:
-    - mongodb_data:/data/db
-    - ./mongo-keyfile:/tmp/mongo-keyfile
-  environment:
-    MONGO_INITDB_ROOT_USERNAME: root
-    MONGO_INITDB_ROOT_PASSWORD: 123456
-  command: >
-    bash -c "
-      cp /tmp/mongo-keyfile /etc/mongo-keyfile &&
-      chmod 400 /etc/mongo-keyfile &&
-      chown mongodb:mongodb /etc/mongo-keyfile &&
-      mongod --replSet rs0 --bind_ip_all --keyFile /etc/mongo-keyfile
-    " 
+    image: mongo:latest
+    container_name: mongodb_dev
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: 123456
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--username", "root", "--password", "123456", "--authenticationDatabase", "admin", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
   mongo-express:
     image: mongo-express:latest
     container_name: mongo_express_dev
@@ -26,29 +24,12 @@ services:
     ports:
       - "8081:8081"
     environment:
-      - ME_CONFIG_MONGODB_URL=mongodb://root:123456@mongodb:27017/?directConnection=true
-      - ME_CONFIG_BASICAUTH_USERNAME=admin
-      - ME_CONFIG_BASICAUTH_PASSWORD=admin
+      ME_CONFIG_MONGODB_URL: mongodb://root:123456@mongodb:27017/?authSource=admin
+      ME_CONFIG_BASICAUTH_USERNAME: admin
+      ME_CONFIG_BASICAUTH_PASSWORD: admin
     depends_on:
       mongodb:
         condition: service_healthy
-    networks:
-      default:
-        aliases:
-          - mongo
-  server:
-    build: .
-    container_name: server_dev
-    restart: always
-    ports:
-      - "8000:8000"
-    env_file:
-      - .env
-    volumes:
-      - .:/app
-      - /app/node_modules
-    depends_on:
-      mongodb:
-        condition: service_healthy
+
 volumes:
   mongodb_data:

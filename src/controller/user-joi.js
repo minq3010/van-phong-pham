@@ -370,11 +370,14 @@ export const updateUser = async (req, res) => {
       }
     }
 
-    // Update user
-    await User.findByIdAndUpdate(id, req.body, { new: true });
+    const updatedUser = await User.findByIdAndUpdate(id, req.body, {
+      new: true,
+      runValidators: true,
+    }).select("-password");
 
     return res.status(200).json({
       message: "Update success",
+      user: updatedUser,
     });
   } catch (error) {
     return res.status(500).json({ message: error.message });
@@ -511,6 +514,118 @@ export const forgotPassword = async (req, res) => {
     res.json({ message: "Đã gửi email reset mật khẩu" });
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+
+// OTP flow used by frontend (4 digits)
+export const forgotOtp = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ message: "Vui lòng nhập email" });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "Email không tồn tại" });
+    }
+
+    const otp = String(Math.floor(1000 + Math.random() * 9000));
+    user.resetPasswordToken = crypto.createHash("sha256").update(otp).digest("hex");
+    user.resetPasswordExpire = Date.now() + 15 * 60 * 1000;
+    await user.save();
+
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.MAIL_USER || "samtrung0809@gmail.com",
+        pass: process.env.MAIL_PASS || "fxkv ohaj zqgy tnim",
+      },
+    });
+
+    await transporter.sendMail({
+      to: user.email,
+      subject: "Mã xác nhận đặt lại mật khẩu",
+      html: `
+        <p>Bạn đã yêu cầu đặt lại mật khẩu.</p>
+        <p>Mã xác nhận (OTP) của bạn là: <b>${otp}</b></p>
+        <p>Mã sẽ hết hạn sau 15 phút.</p>
+      `,
+    });
+
+    return res.status(200).json({ message: "Đã gửi mã xác nhận" });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+export const verifyOtp = async (req, res) => {
+  try {
+    const { otp, email } = req.body;
+    if (!otp) {
+      return res.status(400).json({ message: "Vui lòng nhập mã xác nhận" });
+    }
+
+    const hashedToken = crypto.createHash("sha256").update(String(otp)).digest("hex");
+
+    const query = {
+      resetPasswordToken: hashedToken,
+      resetPasswordExpire: { $gt: Date.now() },
+      ...(email ? { email } : {}),
+    };
+
+    const user = await User.findOne(query);
+    if (!user) {
+      return res
+        .status(400)
+        .json({ message: "Mã xác nhận không hợp lệ hoặc đã hết hạn" });
+    }
+
+    return res.status(200).json({
+      success: true,
+      email: user.email,
+      message: "Xác minh thành công",
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+export const resetPasswordOtp = async (req, res) => {
+  try {
+    const { email, password, password_confirmation } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: "Thiếu email" });
+    }
+    if (!password) {
+      return res.status(400).json({ message: "Vui lòng nhập mật khẩu mới" });
+    }
+    if (password !== password_confirmation) {
+      return res.status(400).json({ message: "2 mật khẩu không trùng nhau" });
+    }
+
+    const user = await User.findOne({
+      email,
+      resetPasswordToken: { $exists: true, $ne: null },
+      resetPasswordExpire: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res
+        .status(400)
+        .json({ message: "Phiên đặt lại mật khẩu không hợp lệ hoặc đã hết hạn" });
+    }
+
+    const hashedPassword = await hash.hash(password, 10);
+    user.password = hashedPassword;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
+    await user.save();
+
+    return res.status(200).json({ message: "Đổi mật khẩu thành công" });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
   }
 };
 

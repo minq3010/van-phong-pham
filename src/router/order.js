@@ -15,7 +15,7 @@ router.post("/order", checkUser, AddOrder);
 router.patch("/order/:id", checkout, UpdateOrder);
 router.delete("/order", checkManage, DeleteOrder);
 router.get("/order/user/:userid", checkOwner, GetOrderByUser);       // user chỉ xem đơn của mình
-router.get("/order/:id", checkOwner, DetailOrder);                    // user chỉ xem đơn của mình
+router.get("/order/:id", checkUser, DetailOrder);
 router.get("/order/status/:status/:userid", checkOwner, GetOrderByStatus); // user chỉ xem trạng thái đơn của mình
 
 export default router;

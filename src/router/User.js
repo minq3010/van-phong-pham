@@ -13,6 +13,9 @@ import {
   logout,
   addUser,
   forgotPassword,
+  forgotOtp,
+  verifyOtp,
+  resetPasswordOtp,
   resetPassword,
 } from "../controller/user-joi";
 import { checkout, checkManage, checkUser, checkOwner } from "../xacthuc/checkout";
@@ -24,10 +27,13 @@ router.post("/logout", logout);
 router.post("/login", signin);
 router.post('/refresh-token', refreshTokenHandler);
 router.post("/forgot-password", forgotPassword);
+router.post("/forgot", forgotOtp);
+router.post("/verify-token", verifyOtp);
+router.post("/reset-password", resetPasswordOtp);
 router.post("/reset-password/:token", resetPassword);
 router.patch("/user/force-change-password/:id", checkOwner, forceChangePassword); // đặt trước /user/:id
 router.patch("/user/pass/:id", checkout, UpdatePassword);
-router.patch("/user/:id", checkout, updateUser);
+router.patch("/user/:id", checkOwner, updateUser);
 router.delete("/user/:id", checkManage, DeleteUser);
-router.get("/user/:id", checkout, DetailUser);
+router.get("/user/:id", checkOwner, DetailUser);
 export default router;

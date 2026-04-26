@@ -24,6 +24,27 @@ export const getAllVoucher = async (req, res) => {
     });
   }
 };
+
+export const getPublicVouchers = async (req, res) => {
+  try {
+    const now = new Date();
+
+    const data = await Voucher.find({
+      isActive: true,
+      quantity: { $gt: 0 },
+      $and: [
+        { $or: [{ startDate: { $exists: false } }, { startDate: { $lte: now } }] },
+        { $or: [{ endDate: { $exists: false } }, { endDate: { $gte: now } }] },
+      ],
+    });
+
+    return res.status(200).json(data);
+  } catch (e) {
+    return res.status(500).json({
+      message: e.message,
+    });
+  }
+};
 export const UpdateVoucher = async (req, res) => {
   try {
     const data = await Voucher.findByIdAndUpdate(req.params.id, req.body, {
@@ -66,7 +87,7 @@ export const DeleteVoucher = async (req, res) => {
 export const DetailVoucher = async (req, res) => {
   try {
     const data = await Voucher.findById(req.params.id);
-    return res.status(500).json(data);
+    return res.status(200).json(data);
   } catch (e) {
     return res.status(500).json({
       message: e.message,
