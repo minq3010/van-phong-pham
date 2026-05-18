@@ -1,5 +1,5 @@
 const getGeminiRuntimeConfig = () => ({
-  model: process.env.GEMINI_MODEL || "gemini-2.5-flash",
+  model: "gemini-2.5-flash", // Hardcoded theo yêu cầu của user để tránh lỗi cache biến môi trường
   baseUrl: process.env.GEMINI_BASE_URL || "https://generativelanguage.googleapis.com/v1beta",
 });
 
